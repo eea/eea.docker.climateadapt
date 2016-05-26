@@ -1,0 +1,17 @@
+plone:
+  image: eeacms/plone-climateadapt:devel
+  ports:
+  - "8080:8080"
+  - "4444:4444"
+  volumes:
+  - ./src:/plone/instance/src
+  volumes_from:
+  - plone_data
+  command: ["fg"]
+
+plone_data:
+  image: busybox
+  volumes:
+  - /data/filestorage
+  - /data/blobstorage
+  command: ["chown", "-R", "500:500", "/data"]
