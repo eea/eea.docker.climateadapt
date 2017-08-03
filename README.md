@@ -1,4 +1,4 @@
-# Docker Orchestration for ENI SEIS Portals
+# Docker Orchestration for Climate Adapt
 
 ## Installation
 
