@@ -1,7 +1,18 @@
 source_code:
-  image: eeacms/plone-climateadapt
+  image: eeacms/eea.
   entrypoint: ['buildout']
   command: ['-c', 'source.cfg']
+  volumes:
+  - ./src/source.cfg:/plone/instance/source.cfg:ro
+  - ./src:/plone/instance/src:z
+
+# You can start a new console with
+# docker exec -it devel_console_1 sh
+# You can now run any manual command with that shell
+console:
+  image: eeacms/eea.
+  entrypoint: ['bash']
+  command: ['-c', "tail -f /dev/null"]
   volumes:
   - ./src/source.cfg:/plone/instance/source.cfg:ro
   - ./src:/plone/instance/src:z

@@ -1,17 +1,9 @@
 plone:
-  image: eeacms/plone-climateadapt:devel
+  image: eeacms/eea.docker.
   ports:
-  - "8080:8080"
-  - "4444:4444"
+    - "8090:8080"
   volumes:
-  - ./src:/plone/instance/src
-  volumes_from:
-  - plone_data
-  command: ["fg"]
-
-plone_data:
-  image: busybox
-  volumes:
-  - /data/filestorage
-  - /data/blobstorage
-  command: ["chown", "-R", "500:500", "/data"]
+    - ./src:/plone/instance/src
+    - cca-downloads:/data/downloads
+    - cca-plone-data:/data
+  entrypoint: sh -c "tail -f /dev/null"

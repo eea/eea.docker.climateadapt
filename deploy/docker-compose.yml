@@ -1,88 +1,102 @@
-haproxy:
-  image: eeacms/haproxy
-  labels:
-    io.rancher.container.pull_image: always
-    io.rancher.scheduler.affinity:host_label: climateadapt=yes
-  tty: true
-  stdin_open: true
-  links:
-  - plone
-  environment:
-  - BACKENDS=plone
-  - BACKENDS_PORT=8080
-  - DNS_ENABLED=true
-  volumes:
-  - /etc/localtime:/etc/localtime:ro
+version: "2"
+services:
+  apache:
+    image: eeacms/apache:2.4-1.0
+    labels:
+      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+    depends_on:
+    - varnish
+    environment:
+      SERVER_ADMIN: "helpdesk@climate-adapt-test.eea.europa.eu"
+      SERVER_NAME: "climate-adapt-test.eea.europa.eu"
+      RewriteRule: "^/(.*) http://varnish/VirtualHostBase/http/climate-adapt-test.eea.europa.eu:80/cca/VirtualHostRoot/$$1 [P,L]"
+      TZ: "Europe/Copenhagen"
+  varnish:
+    image: eeacms/varnish:4.1-3.0
+    labels:
+      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+    depends_on:
+    - haproxy
+    environment:
+      VARNISH_BACKEND_HOST: "haproxy"
+      VARNISH_BACKEND_PORT: "5000"
+      VARNISH_MEMORY: "2G"
+      TZ: "Europe/Copenhagen"
+  haproxy:
+    image: eeacms/haproxy:1.7-1.0
+    labels:
+      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+    depends_on:
+    - plone
+    environment:
+      BACKENDS: "plone"
+      BACKENDS_PORT: "8080"
+      DNS_ENABLED: "True"
+      TZ: "Europe/Copenhagen"
+  plone:
+    image: eeacms/eea.docker.
+    labels:
+      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+    depends_on:
+    - zeoserver
+    - memcached
+    environment:
+      ZOPE_MODE: "zeo_client"
+      TZ: "Europe/Copenhagen"
+    volumes:
+    - cca-downloads:/data/downloads
+    - cca-plone-data:/data
+  async:
+    image: eeacms/eea.docker.
+    labels:
+      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+    depends_on:
+    - zeoserver
+    - memcached
+    environment:
+     ZOPE_MODE: "zeo_async"
+     TZ: "Europe/Copenhagen"
+    volumes:
+    - cca-downloads:/data/downloads
+    - cca-async-data:/data
+  memcached:
+    image: memcached:1.4.35
+    labels:
+      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+    environment:
+      TZ: "Europe/Copenhagen"
+    command:
+    - "-m"
+    - "2048"
+  zeoserver:
+    image: plone:4.3.10
+    labels:
+      io.rancher.scheduler.affinity:host_label: hostname=
+    environment:
+      TZ: "Europe/Copenhagen"
+    command:
+    - zeoserver
+    volumes:
+    - cca-data:/data
+  rsync-server:
+    image: eeacms/rsync
+    labels:
+      io.rancher.scheduler.affinity:host_label: hostname=
+    command:
+    - server
+    ports:
+    - "22"
+    volumes:
+    - cca-data:/data
+    environment:
+      SSH_AUTH_KEY_1:
 
-memcached:
-  image: eeacms/memcached
-  labels:
-    io.rancher.scheduler.affinity:host_label: climateadapt=yes
-  tty: true
-  stdin_open: true
-
-postfix:
-  image: eeacms/postfix:eionet
-  labels:
-    io.rancher.scheduler.affinity:host_label: climateadapt=yes
-  tty: true
-  stdin_open: true
-  environment:
-  - MTP_HOST=eea.europa.eu
-  volumes:
-  - /etc/localtime:/etc/localtime:ro
-
-plone:
-  image: eeacms/plone-climateadapt
-  labels:
-    io.rancher.scheduler.affinity:host_label: climateadapt=yes
-  tty: true
-  stdin_open: true
-  links:
-  - zeoserver
-  - memcached
-  - postfix
-  environment:
-    ZOPE_MODE: zeo_client
-  volumes:
-  - /etc/localtime:/etc/localtime:ro
-
-async:
-  image: eeacms/plone-climateadapt
-  labels:
-    io.rancher.scheduler.affinity:host_label: climateadapt=yes
-  tty: true
-  stdin_open: true
-  links:
-  - zeoserver
-  - memcached
-  - postfix
-  environment:
-  - ZOPE_MODE=zeo_async
-  volumes:
-  - /etc/localtime:/etc/localtime:ro
-
-zeoserver:
-  image: eeacms/plone-climateadapt
-  labels:
-    io.rancher.sidekicks: data
-    io.rancher.scheduler.affinity:host_label: climateadapt-data=yes
-  tty: true
-  stdin_open: true
-  volumes_from:
-  - data
-  environment:
-  - ZOPE_MODE=zeoserver
-  volumes:
-  - /etc/localtime:/etc/localtime:ro
-
-data:
-  image: busybox
-  labels:
-    io.rancher.container.start_once: 'true'
-  tty: true
-  stdin_open: true
-  volumes:
-  - ${filestorage}:/data/filestorage
-  - ${blobstorage}:/data/blobstorage
-  command: ["chown", "-R", "500:500", "/data"]
+volumes:
+  cca-plone-data:
+    per_container: true
+  cca-async-data:
+    per_container: true
+  cca-data:
+    driver: rancher-nfs
+  cca-downloads:
+driver: rancher-nfs
