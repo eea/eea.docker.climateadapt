@@ -12,15 +12,20 @@ services:
       RewriteRule: "^/(.*) http://varnish/VirtualHostBase/http/climate-adapt-test.eea.europa.eu:80/cca/VirtualHostRoot/$$1 [P,L]"
       TZ: "Europe/Copenhagen"
   varnish:
-    image: eeacms/varnish
+    build: varnish/
+    # image: eeacms/varnish
     labels:
       io.rancher.scheduler.affinity:host_label_ne: reserved=yes
     depends_on:
     - haproxy
     environment:
-      VARNISH_BACKEND_HOST: "haproxy"
-      VARNISH_BACKEND_PORT: "5000"
-      VARNISH_MEMORY: "2G"
+      BACKENDS: "haproxy"
+      BACKENDS_PROBE_INTERVAL: "3s"
+      BACKENDS_PROBE_TIMEOUT: "1s"
+      BACKENDS_PROBE_WINDOW: "3"
+      BACKENDS_PROBE_THRESHOLD: "2"
+      BACKENDS_PORT: "5000"
+      DNS_ENABLED: "true"
       TZ: "Europe/Copenhagen"
   haproxy:
     image: eeacms/haproxy:1.7-1.0
@@ -28,6 +33,9 @@ services:
       io.rancher.scheduler.affinity:host_label_ne: reserved=yes
     depends_on:
     - plone
+    ports:
+    - "80:5000"
+    - "1936:1936"
     environment:
       BACKENDS: "plone"
       BACKENDS_PORT: "8080"
