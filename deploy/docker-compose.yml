@@ -98,6 +98,62 @@ services:
     - cca-data:/data
     environment:
       SSH_AUTH_KEY_1:
+  # Cron configuration
+  container-crontab:
+    image: rancher/container-crontab:v0.2.0
+    container_name: container-crontab
+    labels:
+      io.rancher.scheduler.global: "true"
+      io.rancher.scheduler.affinity:host_label: hostname=
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/rancher:/var/lib/rancher
+  cron-zeopack:
+    # run zeopack each day at 3am
+    image: plone:4.3.10
+    labels:
+      io.rancher.container.start_once: "true"
+      # io.rancher.scheduler.affinity:host_label: "hostname="
+      cron.schedule: "0 0 3 * * ?"
+    environment:
+      TZ: "Europe/Copenhagen"
+    entrypoint: sh -c "/bin/sed -i -e s/127.0.0.1/zeoserver/ /plone/instance/bin/zeopack && /plone/instance/bin/zeopack"
+    volumes:
+      - cca-data:/data
+  cron-get-broken-links:
+    image: eeacms/eea.docker.
+    labels:
+      io.rancher.container.start_once: "true"
+      # io.rancher.scheduler.affinity:host_label: "hostname="
+      cron.schedule: "0 4 * * *"
+    environment:
+      TZ: "Europe/Copenhagen"
+    entrypoint: bin/zeo_client run bin/get_broken_links
+    volumes:
+      - cca-data:/data
+  cron-archive-news:
+    image: eeacms/eea.docker.
+    labels:
+      io.rancher.container.start_once: "true"
+      # io.rancher.scheduler.affinity:host_label: "hostname="
+      cron.schedule: "0 3 * * *"
+    environment:
+      TZ: "Europe/Copenhagen"
+    entrypoint: bin/zeo_client run bin/archive_news
+    volumes:
+      - cca-data:/data
+  cron-send-mayoradapt-reminders:
+    image: eeacms/eea.docker.
+    labels:
+      io.rancher.container.start_once: "true"
+      # io.rancher.scheduler.affinity:host_label: "hostname="
+      cron.schedule: "0 2 * * *"
+    environment:
+      TZ: "Europe/Copenhagen"
+    entrypoint: bin/zeo_client run bin/send_mayoradapt_reminders
+    volumes:
+      - cca-data:/data
+
 
 volumes:
   cca-plone-data:

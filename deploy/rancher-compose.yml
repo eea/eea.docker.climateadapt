@@ -83,4 +83,14 @@ services:
       unhealthy_threshold: 3
       strategy: recreate
       response_timeout: 6000
-healthy_threshold: 2
+      healthy_threshold: 2
+  container-crontab:
+    scale: 1
+  cron-zeopack:
+    scale: 1
+  cron-get-broken-links:
+    scale: 1
+  cron-archive-news:
+    scale: 1
+  cron-send-mayoradapt-reminders:
+    scale: 1
