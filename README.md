@@ -1,3 +1,5 @@
+# NOTE: the repo that generates the Plone image is: https://github.com/eea/eea.docker.plone-climateadapt
+
 # Docker Orchestration for Climate Adapt
 
 ## Installation
