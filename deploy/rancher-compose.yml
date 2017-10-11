@@ -84,8 +84,6 @@ services:
       strategy: recreate
       response_timeout: 6000
       healthy_threshold: 2
-  container-crontab:
-    scale: 1
   cron-zeopack:
     scale: 1
   cron-get-broken-links:

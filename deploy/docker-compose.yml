@@ -1,21 +1,25 @@
 version: "2"
+
 services:
+
   apache:
     image: eeacms/apache:2.4-1.0
     labels:
-      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+      io.rancher.scheduler.affinity:host_label: cca=yes
     depends_on:
     - varnish
     environment:
-      SERVER_ADMIN: "helpdesk@climate-adapt-test.eea.europa.eu"
-      SERVER_NAME: "climate-adapt-test.eea.europa.eu"
-      RewriteRule: "^/(.*) http://varnish/VirtualHostBase/http/climate-adapt-test.eea.europa.eu:80/cca/VirtualHostRoot/$$1 [P,L]"
+      SERVER_ADMIN: "helpdesk@climate-adapt.eea.europa.eu"
+      SERVER_NAME: "climate-adapt.eea.europa.eu"
+      RewriteRule: "^/(.*) http://varnish/VirtualHostBase/http/climate-adapt.eea.europa.eu:80/cca/VirtualHostRoot/$$1 [P,L]"
       TZ: "Europe/Copenhagen"
+    ports:
+      - "9000:80"
+
   varnish:
-    build: varnish/
-    # image: eeacms/varnish
+    image: eeacms/varnish-emrt-necd:1.5
     labels:
-      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+      io.rancher.scheduler.affinity:host_label: cca=yes
     depends_on:
     - haproxy
     environment:
@@ -27,10 +31,11 @@ services:
       BACKENDS_PORT: "5000"
       DNS_ENABLED: "true"
       TZ: "Europe/Copenhagen"
+
   haproxy:
     image: eeacms/haproxy:1.7-1.0
     labels:
-      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+      io.rancher.scheduler.affinity:host_label: cca=yes
     depends_on:
     - plone
     ports:
@@ -41,10 +46,11 @@ services:
       BACKENDS_PORT: "8080"
       DNS_ENABLED: "True"
       TZ: "Europe/Copenhagen"
+
   plone:
-    image: eeacms/eea.docker.
+    image: eeacms/eea.docker.plone-climateadapt:v0.1
     labels:
-      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+      io.rancher.scheduler.affinity:host_label: cca=yes
     depends_on:
     - zeoserver
     - memcached
@@ -54,10 +60,11 @@ services:
     volumes:
     - cca-downloads:/data/downloads
     - cca-plone-data:/data
+
   async:
-    image: eeacms/eea.docker.
+    image: eeacms/eea.docker.plone-climateadapt:v0.1
     labels:
-      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+      io.rancher.scheduler.affinity:host_label: cca=yes
     depends_on:
     - zeoserver
     - memcached
@@ -67,47 +74,28 @@ services:
     volumes:
     - cca-downloads:/data/downloads
     - cca-async-data:/data
+
   memcached:
     image: memcached:1.4.35
     labels:
-      io.rancher.scheduler.affinity:host_label_ne: reserved=yes
+      io.rancher.scheduler.affinity:host_label: cca=yes
     environment:
       TZ: "Europe/Copenhagen"
     command:
     - "-m"
     - "2048"
+
   zeoserver:
     image: plone:4.3.10
     labels:
-      io.rancher.scheduler.affinity:host_label: hostname=
+      io.rancher.scheduler.affinity:host_label: hostname=prod-mil-cca-i3.pecs.eea
     environment:
       TZ: "Europe/Copenhagen"
     command:
     - zeoserver
     volumes:
     - cca-data:/data
-  rsync-server:
-    image: eeacms/rsync
-    labels:
-      io.rancher.scheduler.affinity:host_label: hostname=
-    command:
-    - server
-    ports:
-    - "22"
-    volumes:
-    - cca-data:/data
-    environment:
-      SSH_AUTH_KEY_1:
-  # Cron configuration
-  container-crontab:
-    image: rancher/container-crontab:v0.2.0
-    container_name: container-crontab
-    labels:
-      io.rancher.scheduler.global: "true"
-      io.rancher.scheduler.affinity:host_label: hostname=
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/rancher:/var/lib/rancher
+
   cron-zeopack:
     # run zeopack each day at 3am
     image: plone:4.3.10
@@ -120,8 +108,9 @@ services:
     entrypoint: sh -c "/bin/sed -i -e s/127.0.0.1/zeoserver/ /plone/instance/bin/zeopack && /plone/instance/bin/zeopack"
     volumes:
       - cca-data:/data
+
   cron-get-broken-links:
-    image: eeacms/eea.docker.
+    image: eeacms/eea.docker.plone-climateadapt:v0.1
     labels:
       io.rancher.container.start_once: "true"
       # io.rancher.scheduler.affinity:host_label: "hostname="
@@ -131,6 +120,7 @@ services:
     entrypoint: bin/zeo_client run bin/get_broken_links
     volumes:
       - cca-data:/data
+
   cron-archive-news:
     image: eeacms/eea.docker.
     labels:
@@ -142,6 +132,7 @@ services:
     entrypoint: bin/zeo_client run bin/archive_news
     volumes:
       - cca-data:/data
+
   cron-send-mayoradapt-reminders:
     image: eeacms/eea.docker.
     labels:
@@ -161,6 +152,6 @@ volumes:
   cca-async-data:
     per_container: true
   cca-data:
-    driver: rancher-nfs
+    # driver: rancher-nfs
   cca-downloads:
-driver: rancher-nfs
+# driver: rancher-nfs
